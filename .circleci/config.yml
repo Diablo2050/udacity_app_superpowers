@@ -113,7 +113,7 @@ jobs:
       - restore_cache:
           keys: [backend-build]
       - run:
-          command: cd backend && npm audit --audit-level=critical
+          command: cd backend && npm audit fix --audit-level=critical --force
 
   # deploy-infrastructure:
   #   docker:
