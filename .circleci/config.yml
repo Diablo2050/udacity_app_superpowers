@@ -143,6 +143,10 @@ jobs:
             aws ec2 describe-instances \
             --query 'Reservations[*].Instances[*].PublicIpAddress' \
             --output text >> .circleci/ansible/inventory.txt
+      - run: 
+          name: Install tar, gzip
+          command: |
+            yum -y install tar gzip 
       - persist_to_workspace:
           root: ~/
           paths:
