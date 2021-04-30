@@ -211,11 +211,12 @@ jobs:
             if grep -q "has been executed successfully" migration_${CIRCLE_WORKFLOW_ID:0:7}.txt
             then
               result=1
-            fi
             curl -H "Content-Type: text/plain" \
             -H "token: migration_${CIRCLE_WORKFLOW_ID:0:7}" \
             --request PUT \
             --data ${result} https://api.memstash.io/values/migration
+            fi
+
      # Here's where you will add some code to rollback on failure      
 
   deploy-frontend:
