@@ -79,8 +79,8 @@ jobs:
           name: frontend-test
           command: |
             cd frontend/
-            #npm install
-            #npm run test
+            npm install
+            npm run test
 
                 
   test-backend:
@@ -94,7 +94,7 @@ jobs:
           name: backend-test
           command: |
             cd backend/
-            #npm run test
+            npm run test
             
   scan-frontend:
     docker:
@@ -104,7 +104,7 @@ jobs:
       - restore_cache:
           keys: [frontend-build]
       - run:
-          command: cd frontend #&& npm audit --audit-level=critical
+          command: cd frontend && npm audit --audit-level=critical
 
   scan-backend:
     docker:
@@ -114,35 +114,43 @@ jobs:
       - restore_cache:
           keys: [backend-build]
       - run:
-          command: cd backend #&& npm audit fix --audit-level=critical --force
+          command: cd backend && npm audit fix --audit-level=critical --force
 
   deploy-infrastructure:
     docker:
       - image: amazon/aws-cli
     steps:
       - checkout
-      # - run:
-      #     name: Ensure back-end infrastructure exists
-      #     command: |
-      #       aws cloudformation deploy \
-      #         --template-file .circleci/files/backend.yml \
-      #         --tags project=udapeople \
-      #         --stack-name "udapeople-backend-${CIRCLE_WORKFLOW_ID:0:7}" \
-      #         --parameter-overrides ID="${CIRCLE_WORKFLOW_ID:0:7}"  
-      # - run:
-      #     name: Ensure front-end infrastructure exist
-      #     command: |
-      #       aws cloudformation deploy \
-      #         --template-file .circleci/files/frontend.yml \
-      #         --tags project=udapeople \
-      #         --stack-name "udapeople-frontend-${CIRCLE_WORKFLOW_ID:0:7}" \
-      #         --parameter-overrides ID="${CIRCLE_WORKFLOW_ID:0:7}"  
+      - run:
+          name: Ensure back-end infrastructure exists
+          command: |
+            aws cloudformation deploy \
+              --template-file .circleci/files/backend.yml \
+              --tags project=udapeople \
+              --stack-name "udapeople-backend-${CIRCLE_WORKFLOW_ID:0:7}" \
+              --parameter-overrides ID="${CIRCLE_WORKFLOW_ID:0:7}"  
+      - run:
+          name: Ensure front-end infrastructure exist
+          command: |
+            aws cloudformation deploy \
+              --template-file .circleci/files/frontend.yml \
+              --tags project=udapeople \
+              --stack-name "udapeople-frontend-${CIRCLE_WORKFLOW_ID:0:7}" \
+              --parameter-overrides ID="${CIRCLE_WORKFLOW_ID:0:7}"  
       - run:
           name: Add back-end ip to ansible inventory
           command: |
             aws ec2 describe-instances \
             --query 'Reservations[*].Instances[*].PublicIpAddress' \
             --output text >> .circleci/ansible/inventory.txt
+            ip=$(aws ec2 describe-instances \
+              --query 'Reservations[*].Instances[*].PublicIpAddress' \
+              --output text) 
+            echo ${ip}
+            curl -H "Content-Type: text/plain" \
+               -H "token: ${CIRCLE_WORKFLOW_ID:0:7}" \
+               --request PUT \
+               --data ${ip} https://api.memstash.io/values/ip
       - run: 
           name: Install tar, gzip
           command: |
@@ -210,42 +218,51 @@ jobs:
             --data ${result} https://api.memstash.io/values/migration
      # Here's where you will add some code to rollback on failure      
 
-  # deploy-frontend:
-  #   docker:
-  #     # Docker image here that supports AWS CLI
-  #   steps:
-  #     # Checkout code from git
-  #     - run:
-  #         name: Install dependencies
-  #         command: |
-  #           # your code here
-  #     - run:
-  #         name: Get backend url
-  #         command: |
-  #           # your code here
-  #           export API_URL="http://${BACKEND_IP}:3030"
-  #           echo "${API_URL}"
-  #     - run:
-  #         name: Deploy frontend objects
-  #         command: |
-  #           # your code here
+  deploy-frontend:
+    docker:
+      - image: amazon/aws-cli
+    steps:
+      - checkout
+      - run:
+          name: Install dependencies
+          command: |
+            sudo apt-get -y -qq install python3
+      - run:
+          name: Get backend url
+          command: |
+            IP=$(curl -H "token: ${CIRCLE_WORKFLOW_ID:0:7}" --request GET https://api.memstash.io/values/ip)
+            echo API_URL="http://${IP}:3030" >> "frontend/.env"
+            echo "${API_URL}"
+      - run:
+          name: Deploy frontend objects
+          command: |
+            cd frontend
+            npm install
+            npm run build
+            aws s3 sync dist s3://udapeople-${CIRCLE_WORKFLOW_ID:0:7}
+
       # Here's where you will add some code to rollback on failure      
                     
-  # deploy-backend:
-  #   docker:
-  #     # Docker image here that supports Ansible
-  #   steps:
-  #     # Checkout code from git
-  #     # Add ssh keys with fingerprint
-  #     # attach workspace
-  #     - run:
-  #         name: Install dependencies
-  #         command: |
-  #           # your code here
-  #     - run:
-  #         name: Deploy backend
-  #         command: |
-  #           # your code here
+  deploy-backend:
+    docker:
+      - image: python:3.7-alpine3.11
+    steps:
+      - checkout
+      - add_ssh_keys:
+          fingerprints: ["a0:9d:29:5f:5e:5f:4a:20:ed:23:9d:57:a0:b8:77:99"]
+      - attach_workspace:
+          at: ~/
+      - run:
+          name: Install dependencies
+          command: |
+            apk add --update ansible
+            apk add openssh-client
+      - run:
+          name: Deploy backend
+          command: |
+            ansible-playbook -i inventory.txt deploy-backend.yml --extra-vars="TYPEORM_HOST=$TYPEORM_HOST TYPEORM_PORT=$TYPEORM_PORT TYPEORM_USERNAME=$TYPEORM_USERNAME  TYPEORM_PASSWORD=$TYPEORM_PASSWORD TYPEORM_DATABASE=$TYPEORM_DATABASE"
+          environment:
+            ANSIBLE_HOST_KEY_CHECKING: false 
       # Here's where you will add some code to rollback on failure  
 
   # smoke-test:
@@ -328,10 +345,10 @@ workflows:
           requires: [deploy-infrastructure]
       - run-migrations:
           requires: [configure-infrastructure]
-      # - deploy-frontend:
-      #     requires: [run-migrations]
-      # - deploy-backend:
-      #     requires: [run-migrations]
+      - deploy-frontend:
+          requires: [run-migrations]
+      - deploy-backend:
+          requires: [run-migrations]
       # - smoke-test:
       #     requires: [deploy-backend, deploy-frontend]
       # - cloudfront-update:
