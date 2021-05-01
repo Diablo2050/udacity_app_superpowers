@@ -338,7 +338,7 @@ jobs:
                 aws cloudformation deploy \
                 --template-file cloudfront.yml \
                 --stack-name udapeople-cloudfront \
-                --parameter-overrides WorkflowID="${CIRCLE_WORKFLOW_ID}" 
+                --parameter-overrides WorkflowID="{CIRCLE_WORKFLOW_ID:0:7}" 
      
       - destroy-environment:
           WorkflowID: ${CIRCLE_WORKFLOW_ID:0:7}
