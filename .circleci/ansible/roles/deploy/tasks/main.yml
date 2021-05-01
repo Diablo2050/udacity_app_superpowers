@@ -10,20 +10,24 @@
     src: /root/project/backend
     dest: /home/ubuntu
 
+- name: change ownership
+  become: true
+  shell: chown ubuntu:ubuntu  /home/ubuntu/backend/ -R
+
 - name: "Install dependencies"
-  shell: |
-    cd /home/ubuntu/backend   
-    ls -la 
+  shell: | 
     npm install
+  args:
+    chdir: /home/ubuntu/backend
     
 - name: "build package"
-  become: true
   shell: |
-    cd /home/ubuntu/backend
     npm run build
+  args:
+    chdir: /home/ubuntu/backend
+
 - name: "run server"
-  become: true
   shell: |
-    cd /home/ubuntu/backend
-    pm2 start npm -- run "start:dev"
-    pm2 ls
+    pm2 start npm --name backend -- run start
+  args:
+    chdir: /home/ubuntu/backend
