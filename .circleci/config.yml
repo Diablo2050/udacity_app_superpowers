@@ -264,6 +264,7 @@ jobs:
           command: |
             apk add --update ansible
             apk add openssh-client
+            pip install awscli
       - run:
           name: Deploy backend
           #working_directory: ./.circleci/ansible
@@ -294,6 +295,7 @@ jobs:
           name: Install dependencies
           command: |
             apk add --update curl
+            pip install awscli
       - run:
           name: Get backend url & test backend
           command: |
