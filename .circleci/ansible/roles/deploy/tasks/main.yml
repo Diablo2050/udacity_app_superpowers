@@ -14,20 +14,22 @@
   become: true
   shell: chown ubuntu:ubuntu  /home/ubuntu/backend/ -R
 
-- name: "Install dependencies"
-  shell: | 
-    npm install
-  args:
-    chdir: /home/ubuntu/backend
+- name: run build script
+  shell: bash  /home/ubuntu/backend/build.sh
+# - name: "Install dependencies"
+#   shell: | 
+#     npm install
+#   args:
+#     chdir: /home/ubuntu/backend
     
-- name: "build package"
-  shell: |
-    npm run build
-  args:
-    chdir: /home/ubuntu/backend
+# - name: "build package"
+#   shell: |
+#     npm run build
+#   args:
+#     chdir: /home/ubuntu/backend
 
-- name: "run server"
-  shell: |
-    pm2 start npm --name backend -- run start
-  args:
-    chdir: /home/ubuntu/backend
+# - name: "run server"
+#   shell: |
+#     pm2 start npm --name backend -- run start
+#   args:
+#     chdir: /home/ubuntu/backend
