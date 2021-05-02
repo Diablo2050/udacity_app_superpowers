@@ -1,0 +1,14 @@
+Provide a URL to your public GitHub repository. [URL01]
+https://github.com/Diablo2050/udacity_app_superpowers
+
+Provide the public URL for your S3 Bucket (aka, your front-end). [URL02]
+http://udapeople-7832e3b.s3.amazonaws.com/index.html#/employees
+
+Provide the public URL for your CloudFront distribution (aka, your production front-end). [URL03]
+http://d2qodbfff99i8h.cloudfront.net/#/employees
+
+Provide the public URL for your back-end server in EC2. [URL04]
+http://3.85.34.101:3030
+
+Provide a public URL to your Prometheus Server. [URL05]
+http://54.242.172.41:9090/targets
